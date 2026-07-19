@@ -75,7 +75,14 @@ def search_prep(song_dict):
 
         songs[title].append(url)
 
+def metadata(song_dict):
+    for title , info in song_dict.items():
+        o = info[1].json()
 
+        audio = EasyID3(file)
+        audio[""]
+        audio.save()
+#i do not know how to use json so i will do it later because rn i need to go :(
 
 
 convert(find(save_path,"*.webm"))
