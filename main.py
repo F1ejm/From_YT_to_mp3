@@ -46,28 +46,13 @@ def convert(file_path): #from .webm to mp3
         stream = ffmpeg.input(file)
         stream = ffmpeg.output(stream, output_mp3, vn=None, **extra_args)
         ffmpeg.run(stream, overwrite_output=True)
-
-
-def search_prep(song_dict):
-
-    for title, path in song_dict.items():
-        base_url = "https://itunes.apple.com/search?"
-        # title = str(title).replace(" ","+")
-
-        paremeters = {"term": title, "media": "music", "entity": "song", "limit": 1 }
-
-        url = base_url + urllib.parse.urlencode(paremeters)
-        url = str(url).replace(" ","+")
-
-        return url
         
-    
 
-def metadata(file_path):
+def build_clear_dict(file_path):
     for file in file_path:
         song_title = str(os.path.basename(file))
         song_title = os.path.splitext(song_title)[0]
-        songs.update({song_title : file})
+        songs.update({song_title : [file]})
 
         audio = EasyID3(file)
         audio["title"] = song_title
@@ -76,15 +61,32 @@ def metadata(file_path):
         print(audio.pprint())
         print("-" * 30)
     return songs
-#print(dict(enumerate(os.scandir(save_path))))
-#print(find(save_path,"*.webm")) 
 
-found_files = find(save_path,"*.webm")
-convert(found_files)
+def search_prep(song_dict):
+
+    for title, info in song_dict.items():
+        base_url = "https://itunes.apple.com/search?"
+        # title = str(title).replace(" ","+")
+
+        paremeters = {"term": title, "media": "music", "entity": "song", "limit": 1 }
+
+        url = base_url + urllib.parse.urlencode(paremeters)
+        url = str(url).replace(" ","+")
+
+        songs[title].append(url)
+
+
+
+
+convert(find(save_path,"*.webm"))
+
+#clear terminal 
 os.system('cls' if os.name == 'nt' else 'clear')
-metadata(mp3_files_path)
 
-url = search_prep(songs)
+build_clear_dict(mp3_files_path)
+search_prep(songs)
+print(songs)
 
-
+# for song,info in songs.items():
+#     print(info[1])
 
