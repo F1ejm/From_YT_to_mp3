@@ -1,6 +1,9 @@
 import yt_dlp
 import ffmpeg
 import os
+import json
+import requests
+import urllib.parse
 from pathlib import Path
 from mutagen.easyid3 import EasyID3
 
@@ -9,6 +12,10 @@ os.environ["PATH"] += os.pathsep + r"D://instalki//ffmpeg-8.1.2-essentials_build
 link = input("link to YT video")
 save_path = input("path to save file")
 mp3_files_path = []
+songs = {
+
+}
+
 ydl_options = {
     "format": "bestaudio", # best or worst for video 
     "outtmpl": save_path+ "/%(title)s.%(ext)s"
@@ -25,7 +32,7 @@ def find(start, name): #name can be *.webm for specific file type
         find.append(str(dir))
     return find
 
-def convert(file_path):
+def convert(file_path): #from .webm to mp3
      for file in file_path:
         
         output_mp3 = os.path.splitext(file)[0] + ".mp3"
@@ -39,22 +46,45 @@ def convert(file_path):
         stream = ffmpeg.input(file)
         stream = ffmpeg.output(stream, output_mp3, vn=None, **extra_args)
         ffmpeg.run(stream, overwrite_output=True)
+
+
+def search_prep(song_dict):
+
+    for title, path in song_dict.items():
+        base_url = "https://itunes.apple.com/search?"
+        # title = str(title).replace(" ","+")
+
+        paremeters = {"term": title, "media": "music", "entity": "song", "limit": 1 }
+
+        url = base_url + urllib.parse.urlencode(paremeters)
+        url = str(url).replace(" ","+")
+
+        return url
         
+    
+
 def metadata(file_path):
     for file in file_path:
         song_title = str(os.path.basename(file))
         song_title = os.path.splitext(song_title)[0]
+        songs.update({song_title : file})
+
         audio = EasyID3(file)
         audio["title"] = song_title
+        audio.save()   
 
-        audio.save()    
         print(audio.pprint())
         print("-" * 30)
-
+    return songs
 #print(dict(enumerate(os.scandir(save_path))))
 #print(find(save_path,"*.webm")) 
 
 found_files = find(save_path,"*.webm")
 convert(found_files)
+os.system('cls' if os.name == 'nt' else 'clear')
 metadata(mp3_files_path)
+
+url = search_prep(songs)
+
+
 
