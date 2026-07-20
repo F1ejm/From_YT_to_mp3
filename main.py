@@ -77,12 +77,26 @@ def search_prep(song_dict):
 
 def metadata(song_dict):
     for title , info in song_dict.items():
-        o = info[1].json()
-
-        audio = EasyID3(file)
-        audio[""]
+        response = requests.get(info[1])
+        o = response.json()
+        result = o["results"][0]
+        title = result.get("trackName")
+        artist = result.get("artistName")
+        album = result.get("collectionName")
+        track_num = str(result.get("trackCount"))    
+        genre = result.get("primaryGenreName") 
+        year = str(result.get("releaseDate"))[:4]
+        
+        audio = EasyID3(info[0])
+        audio["title"] = title
+        audio["artist"] = artist
+        audio["album"] = album
+        audio["tracknumber"] = track_num
+        audio["albumartist"] = artist
+        audio["genre"] = genre
+        audio["date"] = year
         audio.save()
-#i do not know how to use json so i will do it later because rn i need to go :(
+
 
 
 convert(find(save_path,"*.webm"))
@@ -93,7 +107,7 @@ os.system('cls' if os.name == 'nt' else 'clear')
 build_clear_dict(mp3_files_path)
 search_prep(songs)
 print(songs)
+metadata(songs)
 
-# for song,info in songs.items():
-#     print(info[1])
 
+# dodaj na koniec aby program pytał czy dane są git i jak nie to wybierasz które sobeie możesz proprawic
