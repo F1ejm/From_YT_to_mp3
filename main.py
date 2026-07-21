@@ -75,7 +75,10 @@ def search_prep(song_dict):
 
         songs[title].append(url)
 
+# def search(song_dict):
+
 def metadata(song_dict):
+    filename = "cover.jpg"
     for title , info in song_dict.items():
         response = requests.get(info[1])
         o = response.json()
@@ -86,6 +89,14 @@ def metadata(song_dict):
         track_num = str(result.get("trackCount"))    
         genre = result.get("primaryGenreName") 
         year = str(result.get("releaseDate"))[:4]
+        artwork_low_res = result.get("artworkUrl100")
+        artwork_high_res = artwork_low_res.replace("100x100bb.jpg", "300x300bb.jpg")
+
+        artwork_data = requests.get(artwork_high_res).content
+
+        with open(filename, 'wb') as handler:
+            handler.write(artwork_data)
+
         
         audio = EasyID3(info[0])
         audio["title"] = title
@@ -111,4 +122,3 @@ print(songs)
 metadata(songs)
 
 
-# dodaj na koniec aby program pytał czy dane są git i jak nie to wybierasz które sobeie możesz proprawic
