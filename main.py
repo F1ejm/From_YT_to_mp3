@@ -98,6 +98,7 @@ def metadata(song_dict):
         audio.save()
 
 
+#album cover and folder makeing -> next step
 
 convert(find(save_path,"*.webm"))
 
