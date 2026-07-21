@@ -76,7 +76,6 @@ def search_prep(song_dict):
         songs[title]["url"] = url
 
 def search(song_dict):
-    filename = "cover.jpg"
     for title, info in song_dict.items():
         response = requests.get(info["url"])
         o = response.json()
@@ -90,15 +89,11 @@ def search(song_dict):
         info["genre"] = result.get("primaryGenreName") 
         info["year"] = str(result.get("releaseDate"))[:4]
 
-        #artwork
-        artwork_low_res = result.get("artworkUrl100")
-        artwork_high_res = artwork_low_res.replace("100x100bb.jpg", "300x300bb.jpg")
-        artwork_data = requests.get(artwork_high_res).content
-
-        cover_path = save_path + "/" + filename
-        info["cover_path"] = cover_path
-        with open(filename, 'wb') as handler:
-            handler.write(artwork_data)
+def make_new_directory(song_dict):
+    for title, info in song_dict.items():
+        new_directory = save_path + "/" + info["artist"] + "/" + info["album"] + "/" 
+        os.makedirs(new_directory, exist_ok=True)
+        info["new_directory"] = new_directory
 
 def metadata(song_dict):
     for title , info in song_dict.items():
@@ -113,15 +108,32 @@ def metadata(song_dict):
         audio["date"] = info["year"]
         audio.save()
 
+def fetch_artwork(song_dict):
+    filename = "cover.jpg"
+    for title, info in song_dict.items():
+        response = requests.get(info["url"])
+        o = response.json()
+        result = o["results"][0]    
+
+        artwork_low_res = result.get("artworkUrl100")
+        artwork_high_res = artwork_low_res.replace("100x100bb.jpg", "300x300bb.jpg")
+        artwork_data = requests.get(artwork_high_res).content
+
+        cover_path = info["new_directory"] + filename
+        info["cover_path"] = cover_path
+        with open(cover_path, 'wb') as handler:
+            handler.write(artwork_data)
+
 def segregate_files(song_dict):
     for title , info in song_dict.items():
-        new_directory = save_path + "/" + info["artist"] + "/" + info["album"] + "/" 
-        os.makedirs(new_directory, exist_ok=True)
 
-        new_path_mp3 = new_directory +  info["title"] + ".mp3"
-        new_path_cover = new_directory + "cover.jpg"
+        new_path_mp3 = info["new_directory"] +  info["title"] + ".mp3"
+        new_path_cover = info["new_directory"] + "cover.jpg"
         shutil.move(info["path"],new_path_mp3)
         shutil.move(info["cover_path"], new_path_cover)
+        del info["cover_path"]
+        #new path must be updated etc. 
+
 
         #webm_file = save_path + original_title[:4] + ".webm"
         #make so webm file will be deleted at the end of proces
@@ -138,11 +150,12 @@ os.system('cls' if os.name == 'nt' else 'clear')
 build_clear_dict(mp3_files_path)
 search_prep(songs)
 search(songs)
+make_new_directory(songs)
 metadata(songs)
+fetch_artwork(songs)
+segregate_files(songs)
 
 print(songs)
-
-segregate_files(songs)
 
 
 
