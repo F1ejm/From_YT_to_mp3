@@ -4,6 +4,7 @@ import os
 import json
 import requests
 import urllib.parse
+import shutil
 from pathlib import Path
 from mutagen.easyid3 import EasyID3
 
@@ -82,18 +83,20 @@ def search(song_dict):
         result = o["results"][0]
 
         #for metadata
-        songs[title]["title"] = result.get("trackName")
-        songs[title]["artist"] = result.get("artistName")
-        songs[title]["album"] = result.get("collectionName")
-        songs[title]["track_num"] = str(result.get("trackCount"))   
-        songs[title]["genre"] = result.get("primaryGenreName") 
-        songs[title]["year"] = str(result.get("releaseDate"))[:4]
+        info["title"] = result.get("trackName")
+        info["artist"] = result.get("artistName")
+        info["album"] = result.get("collectionName")
+        info["track_num"] = str(result.get("trackCount"))   
+        info["genre"] = result.get("primaryGenreName") 
+        info["year"] = str(result.get("releaseDate"))[:4]
 
         #artwork
         artwork_low_res = result.get("artworkUrl100")
         artwork_high_res = artwork_low_res.replace("100x100bb.jpg", "300x300bb.jpg")
         artwork_data = requests.get(artwork_high_res).content
 
+        cover_path = save_path + "/" + filename
+        info["cover_path"] = cover_path
         with open(filename, 'wb') as handler:
             handler.write(artwork_data)
 
@@ -101,14 +104,27 @@ def metadata(song_dict):
     for title , info in song_dict.items():
 
         audio = EasyID3(info["path"])
-        audio["title"] = songs[title]["title"]
-        audio["artist"] = songs[title]["artist"]
-        audio["album"] = songs[title]["album"]
-        audio["tracknumber"] = songs[title]["track_num"]
-        audio["albumartist"] = songs[title]["artist"]
-        audio["genre"] = songs[title]["genre"]
-        audio["date"] = songs[title]["year"]
+        audio["title"] = info["title"]
+        audio["artist"] = info["artist"]
+        audio["album"] = info["album"]
+        audio["tracknumber"] = info["track_num"]
+        audio["albumartist"] = info["artist"]
+        audio["genre"] = info["genre"]
+        audio["date"] = info["year"]
         audio.save()
+
+def segregate_files(song_dict):
+    for title , info in song_dict.items():
+        new_directory = save_path + "/" + info["artist"] + "/" + info["album"] + "/" 
+        os.makedirs(new_directory, exist_ok=True)
+
+        new_path_mp3 = new_directory +  info["title"] + ".mp3"
+        new_path_cover = new_directory + "cover.jpg"
+        shutil.move(info["path"],new_path_mp3)
+        shutil.move(info["cover_path"], new_path_cover)
+
+        #webm_file = save_path + original_title[:4] + ".webm"
+        #make so webm file will be deleted at the end of proces
 
 
 
@@ -126,6 +142,7 @@ metadata(songs)
 
 print(songs)
 
+segregate_files(songs)
 
 
 
