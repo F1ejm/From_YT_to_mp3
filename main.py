@@ -19,7 +19,6 @@ songs = {
 ydl_options = {
     "format": "bestaudio", # best or worst for video 
     "outtmpl": save_path+ "/%(title)s.%(ext)s"
-
 }
 
 with yt_dlp.YoutubeDL(ydl_options) as ydl:
@@ -52,7 +51,7 @@ def build_clear_dict(file_path):
     for file in file_path:
         song_title = str(os.path.basename(file))
         song_title = os.path.splitext(song_title)[0]
-        songs.update({song_title : [file]})
+        songs.update({song_title : {"path":file}})
 
         audio = EasyID3(file)
         audio["title"] = song_title
@@ -73,40 +72,44 @@ def search_prep(song_dict):
         url = base_url + urllib.parse.urlencode(paremeters)
         url = str(url).replace(" ","+")
 
-        songs[title].append(url)
+        songs[title]["url"] = url
 
-# def search(song_dict):
-
-def metadata(song_dict):
+def search(song_dict):
     filename = "cover.jpg"
-    for title , info in song_dict.items():
-        response = requests.get(info[1])
+    for title, info in song_dict.items():
+        response = requests.get(info["url"])
         o = response.json()
         result = o["results"][0]
-        title = result.get("trackName")
-        artist = result.get("artistName")
-        album = result.get("collectionName")
-        track_num = str(result.get("trackCount"))    
-        genre = result.get("primaryGenreName") 
-        year = str(result.get("releaseDate"))[:4]
+
+        #for metadata
+        songs[title]["title"] = result.get("trackName")
+        songs[title]["artist"] = result.get("artistName")
+        songs[title]["album"] = result.get("collectionName")
+        songs[title]["track_num"] = str(result.get("trackCount"))   
+        songs[title]["genre"] = result.get("primaryGenreName") 
+        songs[title]["year"] = str(result.get("releaseDate"))[:4]
+
+        #artwork
         artwork_low_res = result.get("artworkUrl100")
         artwork_high_res = artwork_low_res.replace("100x100bb.jpg", "300x300bb.jpg")
-
         artwork_data = requests.get(artwork_high_res).content
 
         with open(filename, 'wb') as handler:
             handler.write(artwork_data)
 
-        
-        audio = EasyID3(info[0])
-        audio["title"] = title
-        audio["artist"] = artist
-        audio["album"] = album
-        audio["tracknumber"] = track_num
-        audio["albumartist"] = artist
-        audio["genre"] = genre
-        audio["date"] = year
+def metadata(song_dict):
+    for title , info in song_dict.items():
+
+        audio = EasyID3(info["path"])
+        audio["title"] = songs[title]["title"]
+        audio["artist"] = songs[title]["artist"]
+        audio["album"] = songs[title]["album"]
+        audio["tracknumber"] = songs[title]["track_num"]
+        audio["albumartist"] = songs[title]["artist"]
+        audio["genre"] = songs[title]["genre"]
+        audio["date"] = songs[title]["year"]
         audio.save()
+
 
 
 #album cover and folder makeing -> next step
@@ -118,7 +121,12 @@ os.system('cls' if os.name == 'nt' else 'clear')
 
 build_clear_dict(mp3_files_path)
 search_prep(songs)
-print(songs)
+search(songs)
 metadata(songs)
+
+print(songs)
+
+
+
 
 
