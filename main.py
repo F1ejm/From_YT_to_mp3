@@ -134,9 +134,12 @@ def segregate_files(song_dict):
         del info["cover_path"]
         #new path must be updated etc. 
 
-
+        #embeded artwork dla kazdej piosenki
         #webm_file = save_path + original_title[:4] + ".webm"
         #make so webm file will be deleted at the end of proces
+        #zabezpieczyc i aby mozna był zmieniac nazwy i w ogole to mozna wszystko
+        #czasami wynajduje dziwne rzeczy i dodac aby mozna było na sztywno wyszukiwac po albumie albo artyście albo niczym aka jednej piosence    
+        #albo dodac inne api do wyboru i sobie wybierzasz na początku 
 
 
 
@@ -155,7 +158,7 @@ metadata(songs)
 fetch_artwork(songs)
 segregate_files(songs)
 
-print(songs)
+# print(songs)
 
 
 
