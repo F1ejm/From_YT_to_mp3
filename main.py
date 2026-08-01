@@ -10,8 +10,8 @@ from mutagen.easyid3 import EasyID3
 
 os.environ["PATH"] += os.pathsep + r"D://instalki//ffmpeg-8.1.2-essentials_build//ffmpeg-8.1.2-essentials_build//bin"
 
-link = input("link to YT video")
-save_path = input("path to save file")
+link = input("link to YT video: ")
+save_path = input("path to save file: ")
 mp3_files_path = []
 songs = {
 
@@ -58,8 +58,8 @@ def build_clear_dict(file_path):
         audio["title"] = song_title
         audio.save()   
 
-        print(audio.pprint())
-        print("-" * 30)
+        # print(audio.pprint())
+        # print("-" * 30)
     return songs
 
 def search_prep(song_dict):
@@ -73,21 +73,33 @@ def search_prep(song_dict):
         url = base_url + urllib.parse.urlencode(paremeters)
         url = str(url).replace(" ","+")
 
-        songs[title]["url"] = url
+        info["url"] = url
 
 def search(song_dict):
     for title, info in song_dict.items():
+        print(title)
+        print("-" * 30)
         response = requests.get(info["url"])
         o = response.json()
         result = o["results"][0]
 
         #for metadata
-        info["title"] = result.get("trackName")
-        info["artist"] = result.get("artistName")
-        info["album"] = result.get("collectionName")
-        info["track_num"] = str(result.get("trackCount"))   
-        info["genre"] = result.get("primaryGenreName") 
-        info["year"] = str(result.get("releaseDate"))[:4]
+        info["title"] = confirm_field("title",result.get("trackName"))
+        info["artist"] = confirm_field("artist",result.get("artistName"))
+        info["album"] = confirm_field("album",result.get("collectionName"))
+        info["track_num"] = confirm_field("track_num",str(result.get("trackCount")))   
+        info["genre"] = confirm_field("genre",result.get("primaryGenreName")) 
+        info["year"] = confirm_field("year",str(result.get("releaseDate"))[:4])
+
+def confirm_field(data_type:str, api):
+    print(f"{data_type} : {api}")
+    decision = input("y / corrected title: ")
+    if decision == "y":
+        return api
+    else:
+        return decision
+    
+
 
 def make_new_directory(song_dict):
     for title, info in song_dict.items():
@@ -158,7 +170,7 @@ metadata(songs)
 fetch_artwork(songs)
 segregate_files(songs)
 
-# print(songs)
+print(songs)
 
 
 
