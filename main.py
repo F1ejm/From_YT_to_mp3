@@ -89,15 +89,15 @@ def search(song_dict):
         info["title"] = confirm_field("title",result.get("trackName"))
         info["artist"] = confirm_field("artist",result.get("artistName"))
         info["album"] = confirm_field("album",result.get("collectionName"))
-        info["track_num"] = confirm_field("track_num",str(result.get("trackCount")))   
+        info["track_num"] = confirm_field("track_num",result.get("trackCount"))   
         info["genre"] = confirm_field("genre",result.get("primaryGenreName")) 
         info["year"] = confirm_field("year",str(result.get("releaseDate"))[:4])
 
 def confirm_field(data_type:str, api):
     print(f"{data_type} : {api}")
-    decision = input("y / corrected title: ")
-    if decision == "y":
-        return api
+    decision = input("[ENTER] / corrected title: ")
+    if decision == "":
+        return str(api)
     else:
         return decision
     
