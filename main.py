@@ -81,6 +81,8 @@ def search(song_dict):
         print("-" * 30)
         response = requests.get(info["url"])
         o = response.json()
+        if not o["results"]: 
+            continue
         result = o["results"][0]
 
         #for metadata
@@ -125,6 +127,8 @@ def fetch_artwork(song_dict):
     for title, info in song_dict.items():
         response = requests.get(info["url"])
         o = response.json()
+        if not o["results"]: 
+            continue
         result = o["results"][0]    
 
         artwork_low_res = result.get("artworkUrl100")
