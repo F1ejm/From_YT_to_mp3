@@ -11,6 +11,42 @@ from mutagen.easyid3 import EasyID3
 os.environ["PATH"] += os.pathsep + r"D://instalki//ffmpeg-8.1.2-essentials_build//ffmpeg-8.1.2-essentials_build//bin"
 
 
+def download(link):
+    ydl_options = {
+    "format": "bestaudio", # best or worst for video 
+    "outtmpl": save_path+ "/%(title)s.%(ext)s"
+    }
+
+    with yt_dlp.YoutubeDL(ydl_options) as ydl:
+        ydl.download([link])
+
+def search_mode():
+    global artist_name, album_name, album_id, album_tracks
+    if search_album == "y": 
+        artist_name = input("provide artist name to search: ")
+        album_name = input("provide album name: ")
+        
+        base_url = "https://itunes.apple.com/search"
+        params = {"term": f"{artist_name} {album_name}", "media": "music", "entity": "album", "limit": 1}
+        
+        response = requests.get(base_url, params=params).json()
+        results = response.get("results", [])
+        
+        if results and len(results) > 0:
+            album_data = results[0]  
+            album_id = album_data.get("collectionId")
+            print(f"Found Album: {artist_name} - ID: {album_id}")
+            
+
+            lookup_url = "https://itunes.apple.com/lookup"
+            lookup_params = {"id": album_id, "entity": "song"}
+            lookup_data = requests.get(lookup_url, params=lookup_params).json()
+        
+            album_tracks = [item for item in lookup_data.get("results", []) if item.get("wrapperType") == "track"]
+        else:
+            print("Album not found on iTunes. Falling back to single lookup mode.")
+            album_tracks = []
+
 def find(start, name): #name can be *.webm for specific file type
     find = []
     for dir in Path(start).rglob(name):
@@ -39,37 +75,22 @@ def build_clear_dict(file_path):
         song_title = os.path.splitext(song_title)[0]
         songs.update({song_title : {"path":Path(file)}})
 
-        # audio = EasyID3(file)
-        # audio["title"] = song_title
-        # audio.save()   
-        # print(audio.pprint())
-        # print("-" * 30)
+
 
 def request_data(url):
     o = requests.get(url)
     data = o.json()
     return data
 
-def search_prep(song_dict):
-
+def create_url(song_dict):
     for title, info in song_dict.items():
         base_url = "https://itunes.apple.com/search?"
-        # title = str(title).replace(" ","+")
-
-        if search_album == "y":
-            info["url"] = base_url+search_album_info(artist,album_name,title)
+        if search_album == "y" and artist_name and album_name:
+            params = {"term": f"{title} {artist_name} {album_name}", "media": "music", "entity": "song", "limit": 1}
         else: 
-            info["url"] = base_url+search_album_info("","",title)
-        info["url"] = str(info["url"]).replace(" ","+")
-
-def search_album_info(artist:str, album:str,title=""):
-    if title == "":
-        paremeters = {"term":f"{artist} {album}", "media": "music", "entity": "album", "limit": 1}
-    if artist == "" and album =="":
-        paremeters = {"term": title , "media": "music", "entity": "song", "limit": 1}
-    else: 
-        paremeters = {"term": title + "+" + artist + "+" + album, "media": "music", "entity": "song", "limit": 1}
-    return urllib.parse.urlencode(paremeters)
+            params = {"term": title, "media": "music", "entity": "song", "limit": 1}
+        
+        info["url"] = base_url + urllib.parse.urlencode(params)
 
 # def search_singly(title:str):
 #     paremeters = {"term": title , "media": "music", "entity": "song", "limit": 1}
@@ -77,14 +98,22 @@ def search_album_info(artist:str, album:str,title=""):
 
 def search(song_dict):
     for title, info in song_dict.items():
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print(title)
+        print(f"\nMatching: {title}")
         print("-" * 30)
-        #replace with request_data
-        response = requests.get(info["url"])
-        o = response.json()
         
-        if not o["results"]: 
+        matched_track = None
+
+        if search_album == "y" and album_tracks:
+            for track in album_tracks:
+                track_name = track.get("trackName", "").lower()
+                if track_name in title.lower() or title.lower() in track_name:
+                    matched_track = track
+                    break
+        if not matched_track:
+            o = request_data(info["url"])
+            if o.get("results"):
+                matched_track = o["results"][0]
+        if not matched_track: 
             print("something went horribly wrong, please fill data manualy ")
             info["title"] = confirm_field("title","")
             info["artist"] = confirm_field("artist","")
@@ -92,22 +121,22 @@ def search(song_dict):
             info["track_num"] = confirm_field("track_num","")   
             info["genre"] = confirm_field("genre","") 
             info["year"] = confirm_field("year","")
+            
         else: 
-            result = o["results"][0]
             if search_album == "y":
-                info["title"] = result.get("trackName")
-                info["artist"] = result.get("artistName")
-                info["album"] = result.get("collectionName")
-                info["track_num"] = str(result.get("trackCount"))   
-                info["genre"] = result.get("primaryGenreName") 
-                info["year"] = str(result.get("releaseDate"))[:4]
+                info["title"] = matched_track.get("trackName")
+                info["artist"] = matched_track.get("artistName")
+                info["album"] = matched_track.get("collectionName")
+                info["track_num"] = str(matched_track.get("trackNumber"))   
+                info["genre"] = matched_track.get("primaryGenreName") 
+                info["year"] = str(matched_track.get("releaseDate"))[:4]
             else:
-                info["title"] = confirm_field("title",result.get("trackName"))
-                info["artist"] = confirm_field("artist",result.get("artistName"))
-                info["album"] = confirm_field("album",result.get("collectionName"))
-                info["track_num"] = confirm_field("track_num",str(result.get("trackCount")))   
-                info["genre"] = confirm_field("genre",result.get("primaryGenreName")) 
-                info["year"] = confirm_field("year",str(result.get("releaseDate"))[:4])
+                info["title"] = confirm_field("title", matched_track.get("trackName"))
+                info["artist"] = confirm_field("artist", matched_track.get("artistName"))
+                info["album"] = confirm_field("album", matched_track.get("collectionName"))
+                info["track_num"] = confirm_field("track_num", str(matched_track.get("trackNumber")))   
+                info["genre"] = confirm_field("genre", matched_track.get("primaryGenreName")) 
+                info["year"] = confirm_field("year", str(matched_track.get("releaseDate"))[:4])
 
 def confirm_field(data_type:str, api):
     print(f"{data_type} : {api}")
@@ -120,22 +149,26 @@ def confirm_field(data_type:str, api):
 
 def make_new_directory(song_dict):
     for title, info in song_dict.items():
-        new_directory = save_path + "/" + info["artist"] + "/" + info["album"] + "/"
+        artist_clean = sanitize_filename(info["artist"])
+        album_clean = sanitize_filename(info["album"])
+        new_directory = os.path.join(save_path, artist_clean, album_clean)
         os.makedirs(new_directory, exist_ok=True)
-        info["new_directory"] = new_directory
+        info["new_directory"] = new_directory + "/"
 
 def metadata(song_dict):
-    for title , info in song_dict.items():
-
-        audio = EasyID3(info["path"])
-        audio["title"] = info["title"]
-        audio["artist"] = info["artist"]
-        audio["album"] = info["album"]
-        audio["tracknumber"] = info["track_num"]
-        audio["albumartist"] = info["artist"]
-        audio["genre"] = info["genre"]
-        audio["date"] = info["year"]
-        audio.save()
+    for title, info in song_dict.items():
+        try:
+            audio = EasyID3(info["path"])
+            audio["title"] = info["title"]
+            audio["artist"] = info["artist"]
+            audio["album"] = info["album"]
+            audio["tracknumber"] = info["track_num"]
+            audio["albumartist"] = info["artist"]
+            audio["genre"] = info["genre"]
+            audio["date"] = info["year"]
+            audio.save()
+        except Exception as e:
+            print(f"Error saving tags to {title}: {e}")
 
 def fetch_artwork(song_dict):
     filename = "cover.jpg"
@@ -155,15 +188,21 @@ def fetch_artwork(song_dict):
         with open(cover_path, 'wb') as handler:
             handler.write(artwork_data)
 
-def segregate_files(song_dict):
-    for title , info in song_dict.items():
+def sanitize_filename(name: str) -> str:
+    invalid_chars = '<>:"/\\|?*'
+    for ch in invalid_chars:
+        name = name.replace(ch, "")
+    return name.strip()
 
-        new_path_mp3 = info["new_directory"] +  info["title"] + ".mp3"
+def segregate_files(song_dict):
+    for title, info in song_dict.items():
+        title_clean = sanitize_filename(info["title"])
+        new_path_mp3 = info["new_directory"] + title_clean + ".mp3"
+        shutil.move(info["path"], new_path_mp3)
         new_path_cover = info["new_directory"] + "cover.jpg"
-        shutil.move(info["path"],new_path_mp3)
         shutil.move(info["cover_path"], new_path_cover)
         del info["cover_path"]
-        #new path must be updated etc. 
+
 
 
         #webm_file = save_path + original_title[:4] + ".webm"
@@ -174,15 +213,12 @@ def segregate_files(song_dict):
 
 
 search_album = input("album mode: (y/n)")
-if search_album == "y": 
-    artist = input("provide artist name to search: ")
-    album_name = input("provide album name: ")
-    base_url = "https://itunes.apple.com/search?"
-    url = base_url + search_album_info(artist,album_name)
-    response = request_data(url)
-    print(response["results"])
+artist_name = ""
+album_name = ""
+album_id = 0
+album_tracks = []
 
-
+search_mode()
 
 link = input("link to YT video: ")
 save_path = input("path to save file: ")
@@ -191,27 +227,21 @@ save_path = input("path to save file: ")
 mp3_files_path = []
 songs = {}
 
-ydl_options = {
-    "format": "bestaudio", # best or worst for video 
-    "outtmpl": save_path+ "/%(title)s.%(ext)s"
-}
+# #clear terminal 
+#os.system('cls' if os.name == 'nt' else 'clear')
+download(link)
+convert(find(save_path, "*.webm"))
 
-# with yt_dlp.YoutubeDL(ydl_options) as ydl:
-#     ydl.download([link])
-
-convert(find(save_path,"*.webm"))
-
-#clear terminal 
-# os.system('cls' if os.name == 'nt' else 'clear')
-
+# Track processing pipeline
 build_clear_dict(mp3_files_path)
-search_prep(songs)
+create_url(songs)
 search(songs)
 make_new_directory(songs)
 metadata(songs)
 fetch_artwork(songs)
 segregate_files(songs)
 
+print("\nProcessing complete! Detailed structure output:")
 print(songs)
 
 
