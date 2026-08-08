@@ -199,9 +199,7 @@ def segregate_files(song_dict):
         title_clean = sanitize_filename(info["title"])
         new_path_mp3 = info["new_directory"] + title_clean + ".mp3"
         shutil.move(info["path"], new_path_mp3)
-        new_path_cover = info["new_directory"] + "cover.jpg"
-        shutil.move(info["cover_path"], new_path_cover)
-        del info["cover_path"]
+        
 
 
         #albo dodac inne api do wyboru i sobie wybierzasz na początku 
