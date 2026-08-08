@@ -125,8 +125,8 @@ def search(song_dict):
         else: 
             if search_album == "y":
                 info["title"] = matched_track.get("trackName")
-                info["artist"] = matched_track.get("artistName")
-                info["album"] = matched_track.get("collectionName")
+                info["artist"] = artist_name
+                info["album"] = album_name
                 info["track_num"] = str(matched_track.get("trackNumber"))   
                 info["genre"] = matched_track.get("primaryGenreName") 
                 info["year"] = str(matched_track.get("releaseDate"))[:4]
@@ -204,9 +204,6 @@ def segregate_files(song_dict):
         del info["cover_path"]
 
 
-
-        #webm_file = save_path + original_title[:4] + ".webm"
-        #make so webm file will be deleted at the end of proces  
         #albo dodac inne api do wyboru i sobie wybierzasz na początku 
         #for def search -> search nearest Hints or smt
 
@@ -241,6 +238,8 @@ metadata(songs)
 fetch_artwork(songs)
 segregate_files(songs)
 
+for webm_filepath in find(save_path,"*.webm"):
+    os.remove(webm_filepath)
 print("\nProcessing complete! Detailed structure output:")
 print(songs)
 
