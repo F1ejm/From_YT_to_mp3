@@ -13,8 +13,13 @@ os.environ["PATH"] += os.pathsep + r"D://instalki//ffmpeg-8.1.2-essentials_build
 
 def download(link):
     ydl_options = {
-    "format": "bestaudio", # best or worst for video 
-    "outtmpl": save_path+ "/%(title)s.%(ext)s"
+        "format": "bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio/best",
+        "outtmpl": save_path + "/%(title)s.%(ext)s",
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "web", "tv"],
+            }
+        }
     }
 
     with yt_dlp.YoutubeDL(ydl_options) as ydl:
@@ -225,10 +230,11 @@ songs = {}
 # #clear terminal 
 #os.system('cls' if os.name == 'nt' else 'clear')
 download(link)
-convert(find(save_path, "*.webm"))
+convert(find(save_path, "*.mp4")) # if code does nothing to metadata and Detailed sturcture output looks like this -> {}  see file format in which your music ist saved and change it here accordingly (rip 2,5h of my life and best regards to yt-dlp <3)
 
 # Track processing pipeline
 build_clear_dict(mp3_files_path)
+print("DEBUG songs po build_clear_dict:", songs)
 create_url(songs)
 search(songs)
 make_new_directory(songs)
