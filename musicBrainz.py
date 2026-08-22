@@ -32,13 +32,30 @@ def search():
     for a in result["artist-list"]:
         print(a["id"], a["name"], a.get("disambiguation", ""))
 
+
 def make_dict(files):
     for file in files:
         song_title = str(os.path.basename(file))
         song_title = os.path.splitext(song_title)[0]
-        songs.update({song_title : {"path":Path(file)}})
-        songs[song_title]["artist_ID"] = artist_ID
+        songs.update({song_title : {"path":file}})
+        songs[song_title]["artist_name"] = artist
 
+def search_album():
+    result = musicbrainzngs.search_releases(artist=artist)
+    for a in result["release-list"]:
+        list = a["artist-credit"]
+        if find_in_list(list,artist) and a["status"] != "Bootleg":
+            print(a["title"], a["status"])   
+        
+
+def find_in_list(list:list,target:str):
+    for entry in list:
+        if not isinstance(entry, dict):
+            continue                       
+        name = entry["artist"]["name"]
+        if name.lower() == target.lower():
+            return True
+    return False
 
 songs = {}
 album = ""
@@ -55,8 +72,9 @@ download_vid("https://www.youtube.com/watch?v=qgffvFM1J-Q")
 files = find_downloaded(save_path, "*.mp4")
 print(files)
 search()
-artist_ID = str(input("paste artist ID: "))
+artist = str(input("paste artist name: "))
 make_dict(files)
+search_album()
 
 
 
